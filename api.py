@@ -93,19 +93,21 @@ class XTPTickByTick:
 
 
 def entrust_parser(buffer: bytes) -> Entrust:
+    """ 解析逐笔委托 """
     items = struct.unpack("<i4cqdq2c6cq", buffer)
     ret = Entrust(items[0], *items[5:10], items[-1])
     return ret
 
 
 def transaction_parser(buffer: bytes) -> Transaction:
+    """ 解析逐笔成交 """
     items = struct.unpack("<iqdqd2qc", buffer)
     ret = Transaction(*items)
     return ret
 
 
 def tbt_parser(buffer: bytes) -> XTPTickByTick:
-    print(buffer)
+    """ 解析逐笔行情 """
     items = struct.unpack("<i16c4c2qi4c", buffer[:48])
     tbt_type = items[-5]
     data = None
@@ -125,6 +127,7 @@ def tbt_parser(buffer: bytes) -> XTPTickByTick:
 
 
 def market_data_parser(buffer: bytes) -> XTPMarketData:
+    """ 解析XTPMarketData """
     items = struct.unpack("<i16c4c6d2q6d2q22d21q8c", buffer[:504])
     data = XTPMarketData(
         items[0],
@@ -141,6 +144,7 @@ def market_data_parser(buffer: bytes) -> XTPMarketData:
 
 
 def snapshot_parser(buffer: bytes) -> Snapshot:
+    """ 解析行情快照 """
     market_data = market_data_parser(buffer[:-184])
     # 8 8*10 4 4 8*10 4 4
     items = struct.unpack("<qq10iiq10ii", buffer[-112:])
@@ -185,7 +189,7 @@ class Dat:
         header = Header(buf)
         return header
 
-    def read_next_data(self) -> Tuple[DataType, Union[Snapshot]]:
+    def read_next_data(self) -> Tuple[DataType, Union[Snapshot, XTPTickByTick]]:
         header = self.read_header()
         data = self.read(header.data_size)
         if header.data_type in self._parser_func:
@@ -201,6 +205,7 @@ class Dat:
 
 import sys
 import os
+
 def test():
     if not os.path.exists(sys.argv[1]):
         print(f"file {sys.argv[1]} not exists")
